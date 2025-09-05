@@ -1,0 +1,9 @@
+<resources>
+    <!-- Fullscreen, no action bar, dark background; AppCompat based -->
+    <style name="Theme.Player.Fullscreen" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:statusBarColor">@android:color/black</item>
+        <item name="android:navigationBarColor">@android:color/black</item>
+    </style>
+</resources>

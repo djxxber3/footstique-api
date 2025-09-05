@@ -1,0 +1,27 @@
+<resources>
+    <string name="app_name">FootStique</string>
+    <string name="matches">المباريات</string>
+    <string name="channels">القنوات</string>
+    <string name="loading">جاري التحميل...</string>
+    <string name="update_required">التحديث مطلوب</string>
+    <string name="update_message">يرجى تحديث التطبيق للمتابعة</string>
+    <string name="visit_website">زيارة الموقع</string>
+    <string name="error_loading_data">خطأ في تحميل البيانات</string>
+    <string name="retry">إعادة المحاولة</string>
+    <string name="no_matches">لا توجد مباريات لهذا اليوم</string>
+    <string name="no_channels">لا توجد قنوات</string>
+    <string name="choose_date">اختر التاريخ</string>
+    <string name="stream_quality">جودة البث</string>
+    <string name="matches_today">%d مباريات اليوم</string>
+    <string name="channels_count">%d قناة</string>
+    <string name="channel_details">تفاصيل القناة</string>
+    <string name="latest_matches">آخر المباريات</string>
+    <string name="news_and_updates">الأخبار والتحديثات</string>
+    <string name="watch">شاهد</string>
+    <string name="home_team_logo">شعار الفريق المضيف</string>
+    <string name="away_team_logo">شعار الفريق الضيف</string>
+    <string name="home">الرئيسية</string>
+    <string name="live">مباشر</string>
+    <string name="favorites">المفضلة</string>
+    <string name="profile">الملف الشخصي</string>
+</resources>

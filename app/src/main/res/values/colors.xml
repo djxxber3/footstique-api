@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="fs_orange">#FF5722</color>
+    <color name="fs_white">#FFFFFF</color>
+
+    <color name="fs_dark_grey_primary">#121212</color>   <color name="fs_dark_grey_secondary">#1E1E1E</color> <color name="fs_light_grey">#E0E0E0</color>            <color name="fs_grey_divider">#424242</color>      </resources>
