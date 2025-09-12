@@ -1,0 +1,37 @@
+{
+  "name": "football-matches-api-mongo",
+  "version": "3.0.0",
+  "description": "Professional Football Matches API with Admin Panel using MongoDB",
+  "main": "src/app.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js",
+    "sync": "node src/scripts/sync.js"
+  },
+  "dependencies": {
+    "compression": "^1.7.4",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.1.5",
+    "helmet": "^7.1.0",
+    "joi": "^17.11.0",
+    "mongoose": "^8.4.1",
+    "node-cron": "^3.0.3",
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  },
+  "keywords": [
+    "football",
+    "api",
+    "matches",
+    "admin",
+    "mongodb",
+    "mongoose"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}

@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تطبيق المباريات والقنوات المباشرة</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@200;300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Cairo', sans-serif;
+        }
+        
+        .card {
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .channel-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .match-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+        
+        .live-badge {
+            background: linear-gradient(45deg, #ff0000, #ff4444);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        .category-section {
+            background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%);
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div id="app" class="min-h-screen">
+        <header class="bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg">
+            <div class="container mx-auto px-4 py-4">
+                <div class="flex justify-between items-center">
+                    <h1 class="text-2xl font-bold">
+                        <i class="fas fa-futbol mr-2"></i>
+                        مباريات اليوم والقنوات المباشرة
+                    </h1>
+                    <div class="flex space-x-4 space-x-reverse">
+                        <button onclick="loadTodayMatches()" class="tab-btn active" id="matches-tab">
+                            <i class="fas fa-soccer-ball mr-1"></i>
+                            المباريات
+                        </button>
+                        <button onclick="loadChannels()" class="tab-btn" id="channels-tab">
+                            <i class="fas fa-tv mr-1"></i>
+                            القنوات
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div id="loading" class="text-center py-8 hidden">
+            <i class="fas fa-spinner fa-spin text-4xl text-blue-600"></i>
+            <p class="text-gray-600 mt-2">جاري التحميل...</p>
+        </div>
+
+        <div id="error" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded m-4">
+            <span id="error-message"></span>
+        </div>
+
+        <div id="matches-section" class="container mx-auto px-4 py-6">
+            <div class="mb-6">
+                <h2 class="text-xl font-semibold mb-2">مباريات اليوم</h2>
+                <p class="text-gray-600" id="matches-date"></p>
+            </div>
+            <div id="matches-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                </div>
+        </div>
+
+        <div id="channels-section" class="container mx-auto px-4 py-6 hidden">
+            <div class="mb-6">
+                <h2 class="text-xl font-semibold mb-2">القنوات المباشرة</h2>
+                <p class="text-gray-600">جميع القنوات الرياضية مرتبة حسب الفئات</p>
+            </div>
+            <div id="categories-container">
+                </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api/client';
+        
+        // Utility functions
+        function showLoading() {
+            document.getElementById('loading').classList.remove('hidden');
+        }
+        
+        function hideLoading() {
+            document.getElementById('loading').classList.add('hidden');
+        }
+        
+        function showError(message) {
+            document.getElementById('error-message').textContent = message;
+            document.getElementById('error').classList.remove('hidden');
+        }
+        
+        function hideError() {
+            document.getElementById('error').classList.add('hidden');
+        }
+        
+        function formatDateTime(dateTime) {
+            const date = new Date(dateTime);
+            return date.toLocaleString('ar-SA', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+        
+        function formatTime(dateTime) {
+            const date = new Date(dateTime);
+            return date.toLocaleTimeString('ar-SA', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Tab switching
+        function switchTab(activeTab) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(activeTab + '-tab').classList.add('active');
+            
+            document.getElementById('matches-section').classList.toggle('hidden', activeTab !== 'matches');
+            document.getElementById('channels-section').classList.toggle('hidden', activeTab !== 'channels');
+        }
+
+        // Load today's matches
+        async function loadTodayMatches() {
+            switchTab('matches');
+            showLoading();
+            hideError();
+            
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const response = await fetch(`${API_BASE}/matches/${today}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayMatches(data.data.matches, data.data.date);
+                } else {
+                    showError('فشل في تحميل المباريات');
+                }
+            } catch (error) {
+                showError('خطأ في الشبكة: ' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Display matches
+        function displayMatches(matches, date) {
+            const container = document.getElementById('matches-container');
+            const dateElement = document.getElementById('matches-date');
+            
+            dateElement.textContent = `تاريخ: ${new Date(date).toLocaleDateString('ar-SA')}`;
+            
+            if (matches.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full text-center py-8">
+                        <i class="fas fa-info-circle text-4xl text-gray-400 mb-4"></i>
+                        <p class="text-gray-600 text-lg">لا توجد مباريات اليوم</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = matches.map(match => `
+                <div class="card match-card rounded-lg shadow-lg p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="text-right">
+                            <div class="text-sm opacity-90">${match.competition.name}</div>
+                            <div class="text-xs opacity-75">${formatTime(match.kickoff_time)}</div>
+                        </div>
+                        ${match.status === 'LIVE' || match.status === '1H' || match.status === '2H' || match.status === 'HT' ? 
+                            '<span class="live-badge px-2 py-1 rounded text-xs font-bold">مباشر</span>' : 
+                            `<span class="bg-white bg-opacity-20 px-2 py-1 rounded text-xs">${match.status_text}</span>`
+                        }
+                    </div>
+                    
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="text-center flex-1">
+                            <img src="${match.home_team.logo || ''}" alt="${match.home_team.name}" 
+                                 class="w-12 h-12 mx-auto mb-2 rounded-full bg-white p-1" 
+                                 onerror="this.style.display='none'">
+                            <div class="font-semibold text-sm">${match.home_team.name}</div>
+                            ${match.home_team.goals !== null ? `<div class="text-lg font-bold">${match.home_team.goals}</div>` : ''}
+                        </div>
+                        
+                        <div class="text-center px-4">
+                            <div class="text-2xl font-bold">${match.home_team.goals !== null ? ':' : 'VS'}</div>
+                        </div>
+                        
+                        <div class="text-center flex-1">
+                            <img src="${match.away_team.logo || ''}" alt="${match.away_team.name}" 
+                                 class="w-12 h-12 mx-auto mb-2 rounded-full bg-white p-1" 
+                                 onerror="this.style.display='none'">
+                            <div class="font-semibold text-sm">${match.away_team.name}</div>
+                            ${match.away_team.goals !== null ? `<div class="text-lg font-bold">${match.away_team.goals}</div>` : ''}
+                        </div>
+                    </div>
+                    
+                    ${match.streaming_channels.length > 0 ? `
+                        <div class="border-t border-white border-opacity-20 pt-4">
+                            <div class="text-xs opacity-75 mb-2">القنوات الناقلة:</div>
+                            <div class="flex flex-wrap gap-2">
+                                ${match.streaming_channels.map(stream => `
+                                    <button onclick="openStream('${stream.url}')" 
+                                            class="bg-white bg-opacity-20 hover:bg-opacity-30 px-3 py-1 rounded text-xs transition-all">
+                                        <i class="fas fa-play mr-1"></i>
+                                        ${stream.name}
+                                    </button>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : `
+                        <div class="border-t border-white border-opacity-20 pt-4">
+                            <div class="text-xs opacity-75 text-center">لا توجد قنوات ناقلة</div>
+                        </div>
+                    `}
+                </div>
+            `).join('');
+        }
+
+        // Load channels
+        async function loadChannels() {
+            switchTab('channels');
+            showLoading();
+            hideError();
+            
+            try {
+                const response = await fetch(API_BASE + '/channels');
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayChannels(data.data.categories);
+                } else {
+                    showError('فشل في تحميل القنوات');
+                }
+            } catch (error) {
+                showError('خطأ في الشبكة: ' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Display channels
+        function displayChannels(categories) {
+            const container = document.getElementById('categories-container');
+            
+            if (categories.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8">
+                        <i class="fas fa-tv text-4xl text-gray-400 mb-4"></i>
+                        <p class="text-gray-600 text-lg">لا توجد قنوات متاحة</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = categories.map(category => `
+                <div class="category-section rounded-lg p-6 mb-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-bold text-white">
+                            ${category.name}
+                            <span class="text-sm font-normal opacity-75">(${category.channels_count} قناة)</span>
+                        </h3>
+                    </div>
+                    
+                    ${category.channels.length > 0 ? `
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                            ${category.channels.map(channel => `
+                                <div class="channel-card rounded-lg shadow-md p-4">
+                                    <div class="flex items-center mb-3">
+                                        <img src="${channel.logo || ''}" alt="${channel.name}" 
+                                             class="w-8 h-8 rounded mr-3 bg-white p-1" 
+                                             onerror="this.style.display='none'">
+                                        <div>
+                                            <div class="font-semibold">${channel.name}</div>
+                                            ${channel.today_matches_count > 0 ? 
+                                                `<div class="text-xs opacity-75">${channel.today_matches_count} مباراة اليوم</div>` : 
+                                                ''
+                                            }
+                                        </div>
+                                    </div>
+                                    
+                                    ${channel.streams.length > 0 ? `
+                                        <div class="space-y-2">
+                                            ${channel.streams.slice(0, 3).map(stream => `
+                                                <button onclick="openStream('${stream.url}')" 
+                                                        class="w-full bg-white bg-opacity-20 hover:bg-opacity-30 py-2 px-3 rounded text-sm transition-all">
+                                                    <i class="fas fa-play mr-2"></i>
+                                                    ${stream.label}
+                                                </button>
+                                            `).join('')}
+                                            ${channel.streams.length > 3 ? 
+                                                `<div class="text-xs opacity-75 text-center">+${channel.streams.length - 3} روابط أخرى</div>` : 
+                                                ''
+                                            }
+                                        </div>
+                                    ` : `
+                                        <div class="text-xs opacity-75">لا توجد روابط متاحة</div>
+                                    `}
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : `
+                        <div class="text-center py-4">
+                            <p class="text-white opacity-75">لا توجد قنوات في هذه الفئة</p>
+                        </div>
+                    `}
+                </div>
+            `).join('');
+        }
+
+        // Open stream
+        function openStream(url) {
+            if (url) {
+                window.open(url, '_blank');
+            } else {
+                alert('رابط غير صحيح');
+            }
+        }
+
+        // Add tab button styles
+        const style = document.createElement('style');
+        style.textContent = `
+            .tab-btn {
+                padding: 8px 16px;
+                border-radius: 6px;
+                background: rgba(255,255,255,0.1);
+                border: 1px solid rgba(255,255,255,0.2);
+                color: white;
+                transition: all 0.3s ease;
+                cursor: pointer;
+            }
+            
+            .tab-btn:hover {
+                background: rgba(255,255,255,0.2);
+            }
+            
+            .tab-btn.active {
+                background: rgba(255,255,255,0.3);
+                border-color: rgba(255,255,255,0.5);
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTodayMatches();
+        });
+    </script>
+</body>
+</html>

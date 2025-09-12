@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة إدارة المباريات</title>
+    
+    <!-- React & Babel -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .status-live { 
+            background: linear-gradient(45deg, #ef4444, #dc2626);
+            animation: pulse 2s infinite;
+        }
+        
+        .status-finished { background: #10b981; }
+        .status-scheduled { background: #6b7280; }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .match-card {
+            transition: all 0.2s ease;
+        }
+        
+        .match-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        .channel-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .admin-header {
+            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+        }
+        
+        .competition-header {
+            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+        }
+        
+        .date-nav-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+        
+        .date-nav-button {
+            min-height: 44px;
+            min-width: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.375rem;
+            border: 1px solid #e5e7eb;
+            background-color: white;
+            color: #4b5563;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .date-nav-button:hover {
+            background-color: #f3f4f6;
+        }
+        
+        .date-display {
+            padding: 0 1rem;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        /* Mobile Responsive Styles */
+        @media (max-width: 768px) {
+            /* Header responsive */
+            .admin-header .max-w-7xl {
+                padding: 1rem;
+            }
+            
+            .admin-header h1 {
+                font-size: 1.25rem !important;
+            }
+            
+            .admin-header .flex {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .admin-header .flex.items-center {
+                flex-direction: row;
+                gap: 0.5rem;
+            }
+            
+            /* Navigation tabs responsive */
+            .nav-tabs {
+                overflow-x: auto;
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+                white-space: nowrap;
+                padding-bottom: 0.5rem;
+            }
+            
+            .nav-tabs::-webkit-scrollbar {
+                display: none;
+            }
+            
+            .nav-tabs nav {
+                min-width: max-content;
+                padding: 0 1rem;
+            }
+            
+            /* Match cards responsive */
+            .match-card {
+                margin: 0.5rem 0;
+                padding: 1rem !important;
+            }
+            
+            .match-teams {
+                flex-direction: column !important;
+                gap: 1rem !important;
+            }
+            
+            .team-info {
+                justify-content: center !important;
+                text-align: center !important;
+            }
+            
+            .team-info span {
+                font-size: 0.9rem !important;
+            }
+            
+            .match-score {
+                order: -1;
+                margin-bottom: 0.5rem;
+            }
+            
+            /* Date navigation responsive */
+            .date-nav-container {
+                width: 100%;
+                padding: 0 0.5rem;
+            }
+            
+            .date-picker {
+                max-width: 150px;
+                font-size: 0.875rem;
+            }
+            
+            /* Competition grouping responsive */
+            .competition-header {
+                padding: 0.75rem 1rem;
+            }
+            
+            .competition-header h3 {
+                font-size: 0.9rem;
+            }
+            
+            /* Channel badges responsive */
+            .channel-badges {
+                flex-wrap: wrap !important;
+                gap: 0.25rem !important;
+                justify-content: center !important;
+                margin-top: 0.5rem !important;
+            }
+            
+            .channel-badge {
+                font-size: 0.75rem !important;
+                padding: 0.25rem 0.5rem !important;
+            }
+            
+            /* Status badges responsive */
+            .status-badge {
+                font-size: 0.7rem !important;
+                padding: 0.2rem 0.5rem !important;
+            }
+            
+            /* Competition grouping responsive */
+            .competition-group {
+                margin-bottom: 1rem;
+            }
+            
+            /* Better spacing */
+            .space-y-6 > * + * {
+                margin-top: 1.5rem !important;
+            }
+            
+            /* Channel management responsive */
+            .channel-card {
+                flex-direction: column !important;
+                gap: 1rem !important;
+            }
+            
+            .channel-info {
+                width: 100% !important;
+            }
+            
+            .channel-actions {
+                justify-content: center !important;
+                width: 100% !important;
+            }
+            
+            /* Modal responsive */
+            .modal-container {
+                margin: 1rem !important;
+                max-height: calc(100vh - 2rem) !important;
+                width: calc(100vw - 2rem) !important;
+                max-width: none !important;
+            }
+            
+            /* Stream input grids responsive */
+            .stream-grid {
+                grid-template-columns: 1fr !important;
+                gap: 0.5rem !important;
+            }
+            
+            /* Button groups responsive */
+            .btn-group {
+                flex-direction: column !important;
+                gap: 0.5rem !important;
+            }
+            
+            .btn-group button {
+                width: 100% !important;
+            }
+        }
+        
+        /* Tablet responsive (768px - 1024px) */
+        @media (min-width: 768px) and (max-width: 1024px) {
+            .container-responsive {
+                padding: 0 2rem !important;
+            }
+            
+            .grid-tablet {
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
+            
+            .modal-tablet {
+                max-width: 90vw !important;
+            }
+        }
+        
+        /* Fix for iOS Safari */
+        @supports (-webkit-touch-callout: none) {
+            .ios-fix {
+                -webkit-appearance: none;
+                appearance: none;
+                border-radius: 0;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div id="app"></div>
+    <script type="text/babel" src="admin.js"></script>
+</body>
+</html>
