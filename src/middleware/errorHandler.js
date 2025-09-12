@@ -69,31 +69,7 @@ export const errorHandler = (error, req, res, next) => {
         });
     }
 
-    // Handle MySQL errors
-    if (error.code) {
-        switch (error.code) {
-            case 'ER_DUP_ENTRY':
-                return res.status(409).json({
-                    success: false,
-                    error: 'Duplicate entry',
-                    timestamp: new Date().toISOString()
-                });
-            case 'ER_NO_REFERENCED_ROW_2':
-                return res.status(400).json({
-                    success: false,
-                    error: 'Referenced resource not found',
-                    timestamp: new Date().toISOString()
-                });
-            case 'ECONNREFUSED':
-                return res.status(503).json({
-                    success: false,
-                    error: 'Database connection failed',
-                    timestamp: new Date().toISOString()
-                });
-            default:
-                console.error('Unhandled MySQL error:', error);
-        }
-    }
+    // Removed MySQL-specific error handling (not applicable)
 
     // Handle Joi validation errors
     if (error.details) {

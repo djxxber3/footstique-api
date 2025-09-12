@@ -30,9 +30,9 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Security middleware
+// Security middleware (CSP disabled to avoid blocking inline scripts/styles for now)
 app.use(helmet({
-    contentSecurityPolicy: false, // Be cautious with this in production
+    contentSecurityPolicy: false
 }));
 
 // CORS configuration
@@ -101,7 +101,7 @@ cron.schedule(`${syncMinute} ${syncHour} * * *`, async () => {
         console.error('❌ Scheduled sync failed:', error.message);
     }
 }, {
-    timezone: "Africa/Algiers" // Example timezone
+    timezone: process.env.TIMEZONE || "Africa/Algiers"
 });
 
 // Start server

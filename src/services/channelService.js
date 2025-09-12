@@ -5,24 +5,43 @@ import mongoose from 'mongoose';
 
 class ChannelService {
 
-
-
-async getAllChannels(includeInactive = false) {
-    const filter = includeInactive ? {} : { is_active: true };
-    const channels = await Channel.find(filter)
-        .populate('category', 'name sort_order')
-        .sort({ sort_order: 1, name: 1 });
-        
-    // Manually sort by category sort_order if populated
-    return channels.sort((a, b) => {
-        const sortA = a.category ? a.category.sort_order : 999;
-        const sortB = b.category ? b.category.sort_order : 999;
-        if (sortA !== sortB) {
-            return sortA - sortB;
-        }
-        return a.sort_order - b.sort_order || a.name.localeCompare(b.name);
-    });
-}
+    async getAllChannels(includeInactive = false) {
+        const filter = includeInactive ? {} : { is_active: true };
+        const results = await Channel.aggregate([
+            { $match: filter },
+            {
+                $lookup: {
+                    from: 'categories',
+                    localField: 'category',
+                    foreignField: '_id',
+                    as: 'categoryInfo'
+                }
+            },
+            { $unwind: { path: '$categoryInfo', preserveNullAndEmptyArrays: true } },
+            {
+                $addFields: {
+                    category_sort_order: { $ifNull: ['$categoryInfo.sort_order', 999] }
+                }
+            },
+            { $sort: { category_sort_order: 1, sort_order: 1, name: 1 } },
+            {
+                $project: {
+                    id: '$_id',
+                    name: 1,
+                    logo_url: 1,
+                    is_active: 1,
+                    sort_order: 1,
+                    streams: 1,
+                    category: {
+                        id: '$categoryInfo._id',
+                        name: '$categoryInfo.name',
+                        sort_order: '$categoryInfo.sort_order'
+                    }
+                }
+            }
+        ]);
+        return results;
+    }
 
 
     
