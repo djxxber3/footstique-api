@@ -73,8 +73,8 @@ export const API_CONFIG = {
 
 // Date configuration
 export const DATE_CONFIG = {
-    SYNC_DAYS_BEFORE: 3,  // Sync last 3 days
-    SYNC_DAYS_AFTER: 3,   // Sync next 3 days
+    SYNC_DAYS_BEFORE: 1,  // Sync last 1 day
+    SYNC_DAYS_AFTER: 1,   // Sync next 1 day
     TIMEZONE: process.env.TIMEZONE || 'Africa/Algiers'
 };
 

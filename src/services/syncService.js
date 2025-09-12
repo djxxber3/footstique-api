@@ -10,6 +10,10 @@ class SyncService {
     constructor() {
         this.isRunning = false;
         this.lastSyncStatus = null;
+        this.schedulerEnabled = false;
+        this.nextRun = null;
+        this.totalRuns = 0;
+        this.lastError = null;
     }
     
     async makeApiRequest(url, retryCount = 0) {
@@ -110,25 +114,12 @@ class SyncService {
     
     async getSmartSyncDates() {
         const today = new Date();
-        const dates = [];
-
-        // 1) Always include yesterday to update final results
         const yesterday = new Date(today);
         yesterday.setDate(today.getDate() - 1);
-        dates.push(yesterday.toISOString().slice(0, 10));
+        const tomorrow = new Date(today);
+        tomorrow.setDate(today.getDate() + 1);
 
-        // 2) Check today + next 6 days; fetch only if day missing in DB
-        for (let i = 0; i <= 6; i++) {
-            const date = new Date(today);
-            date.setDate(today.getDate() + i);
-            const dateStr = date.toISOString().slice(0, 10);
-            const has = await matchService.hasMatchesForDate(dateStr);
-            if (!has) {
-                dates.push(dateStr);
-            }
-        }
-
-        return dates;
+        return [yesterday, today, tomorrow].map(d => d.toISOString().slice(0, 10));
     }
 
     async syncMatches() {
@@ -139,6 +130,7 @@ class SyncService {
         
         this.isRunning = true;
         const startTime = Date.now();
+        this.totalRuns += 1;
         
         let log;
         try {
@@ -182,6 +174,7 @@ class SyncService {
                     matches_updated: log.matches_updated,
                 }
             };
+            this.lastError = null;
             console.log(`✅ Sync completed in ${duration}ms`);
             
         } catch (error) {
@@ -192,6 +185,7 @@ class SyncService {
                 await log.save();
             }
             this.lastSyncStatus = { success: false, message: 'Sync failed', error: error.message };
+            this.lastError = error.message;
         } finally {
             this.isRunning = false;
         }
@@ -201,7 +195,11 @@ class SyncService {
     getSyncStatus() {
         return {
             isRunning: this.isRunning,
-            lastSync: this.lastSyncStatus
+            lastSync: this.lastSyncStatus,
+            isScheduled: this.schedulerEnabled,
+            nextRun: this.nextRun,
+            totalRuns: this.totalRuns,
+            lastError: this.lastError
         };
     }
     
@@ -212,6 +210,51 @@ class SyncService {
     async getLastSyncDate() {
         const setting = await AppSetting.findOne({ key_name: 'last_sync_date' });
         return setting ? setting.key_value : null;
+    }
+
+    // Scheduler utilities
+    updateSchedulerStatus(enabled, hour, minute, timezone = 'Africa/Algiers') {
+        this.schedulerEnabled = !!enabled;
+        if (enabled) {
+            this.nextRun = this.computeNextRunDate(hour, minute, timezone);
+        } else {
+            this.nextRun = null;
+        }
+    }
+
+    computeNextRunDate(hour, minute, timezone = 'Africa/Algiers') {
+        try {
+            const now = new Date();
+            // Get current date parts in target timezone
+            const fmt = new Intl.DateTimeFormat('en-CA', {
+                timeZone: timezone,
+                year: 'numeric', month: '2-digit', day: '2-digit'
+            });
+            const [{ value: y }, , { value: m }, , { value: d }] = fmt.formatToParts(now);
+            const targetLocal = new Date(`${y}-${m}-${d}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`);
+            // Convert the intended local time in the target timezone to UTC timestamp via offset diff
+            const tzNowParts = new Intl.DateTimeFormat('en-US', { timeZone: timezone, hour12: false, hour: '2-digit', minute: '2-digit' }).formatToParts(now);
+            // Fallback: compare using formatted times to decide if passed
+            const hasPassed = (() => {
+                const nowHour = parseInt(tzNowParts.find(p => p.type === 'hour')?.value || '0', 10);
+                const nowMinute = parseInt(tzNowParts.find(p => p.type === 'minute')?.value || '0', 10);
+                if (nowHour > hour) return true;
+                if (nowHour < hour) return false;
+                return nowMinute >= minute;
+            })();
+            if (hasPassed) {
+                // Add one day in target timezone
+                const dateInTz = new Date(new Date().toLocaleString('en-US', { timeZone: timezone }));
+                dateInTz.setDate(dateInTz.getDate() + 1);
+                const y2 = dateInTz.getFullYear();
+                const m2 = String(dateInTz.getMonth() + 1).padStart(2, '0');
+                const d2 = String(dateInTz.getDate()).padStart(2, '0');
+                return new Date(`${y2}-${m2}-${d2}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`);
+            }
+            return targetLocal;
+        } catch (e) {
+            return null;
+        }
     }
 }
 

@@ -10,7 +10,7 @@ import compression from 'compression';
 
 // Import configurations
 import connectDatabase from './config/database.js';
-import { startDailySync } from './services/syncService.js';
+import syncService, { startDailySync } from './services/syncService.js';
 
 // Import routes
 import adminRoutes from './routes/admin.js';
@@ -91,14 +91,21 @@ app.use('*', (req, res) => {
 app.use(errorHandler);
 
 // Schedule daily sync
-const syncHour = process.env.SYNC_HOUR || 2;
-const syncMinute = process.env.SYNC_MINUTE || 0;
+const syncHour = Number(process.env.SYNC_HOUR || 2);
+const syncMinute = Number(process.env.SYNC_MINUTE || 0);
+// Initialize scheduler status and compute next run
+syncService.updateSchedulerStatus(true, syncHour, syncMinute, process.env.TIMEZONE || 'Africa/Algiers');
+
 cron.schedule(`${syncMinute} ${syncHour} * * *`, async () => {
     console.log('🔄 Starting scheduled daily sync...');
     try {
         await startDailySync();
+        // Update next run after successful or failed run
+        syncService.updateSchedulerStatus(true, syncHour, syncMinute, process.env.TIMEZONE || 'Africa/Algiers');
     } catch (error) {
         console.error('❌ Scheduled sync failed:', error.message);
+        // Still update next run time
+        syncService.updateSchedulerStatus(true, syncHour, syncMinute, process.env.TIMEZONE || 'Africa/Algiers');
     }
 }, {
     timezone: process.env.TIMEZONE || "Africa/Algiers"

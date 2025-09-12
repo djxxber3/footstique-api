@@ -1089,6 +1089,9 @@ const SyncComponent = () => {
 
     useEffect(() => {
         loadSyncStatus();
+        // Poll status periodically to keep UI fresh
+        const id = setInterval(loadSyncStatus, 60000);
+        return () => clearInterval(id);
     }, [loadSyncStatus]);
 
     const handleSync = async () => {
@@ -1142,10 +1145,13 @@ const SyncComponent = () => {
                         <div className="space-y-3">
                             <div className="flex justify-between">
                                 <span className="text-gray-600">الحالة:</span>
-                                <span className={`font-medium ${
-                                    syncStatus.isRunning ? 'text-blue-600' : 'text-green-600'
-                                }`}>
-                                    {syncStatus.isRunning ? 'قيد التشغيل' : 'متوقف'}
+                                <span className={`font-medium`}>
+                                    {syncStatus.isRunning
+                                        ? <span className="text-blue-600">قيد التشغيل</span>
+                                        : syncStatus.isScheduled
+                                            ? <span className="text-gray-600">مجدول</span>
+                                            : <span className="text-red-600">متوقف</span>
+                                    }
                                 </span>
                             </div>
                             <div className="flex justify-between">
@@ -1157,6 +1163,14 @@ const SyncComponent = () => {
                                     }
                                 </span>
                             </div>
+                            {syncStatus.isScheduled && (
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600">المزامنة القادمة:</span>
+                                    <span className="font-medium">
+                                        {syncStatus.nextRun ? `${utils.formatAlgeriaDate(syncStatus.nextRun)} - ${utils.formatAlgeriaTime(syncStatus.nextRun)}` : 'غير معروف'}
+                                    </span>
+                                </div>
+                            )}
                         </div>
                         <div className="space-y-3">
                             <div className="flex justify-between">
