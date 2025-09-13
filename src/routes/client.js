@@ -16,7 +16,7 @@ router.get('/health', (req, res) => {
     });
 });
 
-// Get matches with channels for a specific date (client endpoint)
+// Get matches with channels for a specific date (client endpofint)
 router.get('/matches/:date',
     validate(schemas.dateParam, 'params'),
     async (req, res, next) => {
@@ -34,6 +34,7 @@ router.get('/matches/:date',
                     match.channels.forEach(channel => {
                         if (!channelsMap.has(channel.id)) {
                             channelsMap.set(channel.id, {
+                                id: channel.id,
                                 name: channel.name,
                                 logo: channel.logo_url,
                                 streams: []
@@ -43,6 +44,7 @@ router.get('/matches/:date',
                         if (channel.streams) {
                             channel.streams.filter(s => s.is_active !== false).forEach(stream => {
                                 channelsMap.get(channel.id).streams.push({
+                                    id: stream.id,
                                     url: stream.url,
                                     label: stream.label,
                                     userAgent: stream.userAgent,
@@ -61,7 +63,13 @@ router.get('/matches/:date',
                     ch.streams.forEach(s => {
                         streaming_channels.push({
                             url: s.url,
-                            name: s.label ? `${ch.name} - ${s.label}` : ch.name
+                            name: s.label ? `${ch.name} - ${s.label}` : ch.name,
+                            channel_id: ch.id,
+                            stream_id: s.id,
+                            userAgent: s.userAgent,
+                            referer: s.referer,
+                            origin: s.origin,
+                            cookie: s.cookie
                         });
                     });
                 });
@@ -137,6 +145,7 @@ router.get('/channels', async (req, res, next) => {
                 today_matches_count: channel.today_matches_count || 0,
                 // Return the primary stream (first active one)
                 primary_stream: channel.streams[0] ? {
+                    id: channel.streams[0].id,
                     url: channel.streams[0].url,
                     label: channel.streams[0].label,
                     userAgent: channel.streams[0].userAgent,
@@ -146,6 +155,7 @@ router.get('/channels', async (req, res, next) => {
                 } : null,
                 // Return all available streams for quality options
                 streams: channel.streams.map(stream => ({
+                    id: stream.id,
                     url: stream.url,
                     label: stream.label,
                     userAgent: stream.userAgent,
