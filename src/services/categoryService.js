@@ -60,11 +60,32 @@ class CategoryService {
 
         // Keep only active streams per channel
         const filtered = categories.map(cat => {
-            const ch = (cat.channels || []).map(c => ({
-                ...c.toObject(),
-                streams: (c.streams || []).filter(s => s.is_active)
-            })).filter(c => c.streams && c.streams.length > 0);
-            return { ...cat.toObject(), channels: ch };
+            const catObj = cat.toObject();
+            const ch = (catObj.channels || []).map(c => {
+                const co = typeof c.toObject === 'function' ? c.toObject() : c;
+                const streams = (co.streams || []).filter(s => s && s.is_active).map(s => {
+                    const so = typeof s.toObject === 'function' ? s.toObject() : s;
+                    return {
+                        id: so.id || so._id,
+                        url: so.url,
+                        label: so.label,
+                        userAgent: so.userAgent,
+                        referer: so.referer,
+                        origin: so.origin,
+                        cookie: so.cookie
+                    };
+                });
+                return {
+                    id: co.id || co._id,
+                    name: co.name,
+                    logo_url: co.logo_url,
+                    sort_order: co.sort_order,
+                    is_active: co.is_active,
+                    today_matches_count: co.today_matches_count || 0,
+                    streams
+                };
+            }).filter(c => c.streams && c.streams.length > 0);
+            return { ...catObj, channels: ch };
         });
 
         return filtered.filter(cat => cat.channels && cat.channels.length > 0);
