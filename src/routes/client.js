@@ -43,8 +43,8 @@ router.get('/matches/:date',
                         
                         if (channel.streams) {
                             channel.streams.filter(s => s.is_active !== false).forEach(stream => {
+                                // keep original stream info; headers will be conditionally added later
                                 channelsMap.get(channel.id).streams.push({
-                                    id: stream.id,
                                     url: stream.url,
                                     label: stream.label,
                                     userAgent: stream.userAgent,
@@ -61,16 +61,16 @@ router.get('/matches/:date',
                 const streaming_channels = [];
                 Array.from(channelsMap.values()).forEach(ch => {
                     ch.streams.forEach(s => {
-                        streaming_channels.push({
+                        const item = {
                             url: s.url,
                             name: s.label ? `${ch.name} - ${s.label}` : ch.name,
-                            channel_id: ch.id,
-                            stream_id: s.id,
-                            userAgent: s.userAgent,
-                            referer: s.referer,
-                            origin: s.origin,
-                            cookie: s.cookie
-                        });
+                            channel_id: ch.id
+                        };
+                        if (s.userAgent && String(s.userAgent).trim()) item.userAgent = s.userAgent;
+                        if (s.referer && String(s.referer).trim()) item.referer = s.referer;
+                        if (s.origin && String(s.origin).trim()) item.origin = s.origin;
+                        if (s.cookie && String(s.cookie).trim()) item.cookie = s.cookie;
+                        streaming_channels.push(item);
                     });
                 });
 
@@ -144,25 +144,24 @@ router.get('/channels', async (req, res, next) => {
                 logo: channel.logo_url,
                 today_matches_count: channel.today_matches_count || 0,
                 // Return the primary stream (first active one)
-                primary_stream: channel.streams[0] ? {
-                    id: channel.streams[0].id,
-                    url: channel.streams[0].url,
-                    label: channel.streams[0].label,
-                    userAgent: channel.streams[0].userAgent,
-                    referer: channel.streams[0].referer,
-                    origin: channel.streams[0].origin,
-                    cookie: channel.streams[0].cookie
-                } : null,
+                primary_stream: channel.streams[0] ? (() => {
+                    const s = channel.streams[0];
+                    const obj = { url: s.url, label: s.label };
+                    if (s.userAgent && String(s.userAgent).trim()) obj.userAgent = s.userAgent;
+                    if (s.referer && String(s.referer).trim()) obj.referer = s.referer;
+                    if (s.origin && String(s.origin).trim()) obj.origin = s.origin;
+                    if (s.cookie && String(s.cookie).trim()) obj.cookie = s.cookie;
+                    return obj;
+                })() : null,
                 // Return all available streams for quality options
-                streams: channel.streams.map(stream => ({
-                    id: stream.id,
-                    url: stream.url,
-                    label: stream.label,
-                    userAgent: stream.userAgent,
-                    referer: stream.referer,
-                    origin: stream.origin,
-                    cookie: stream.cookie
-                }))
+                streams: channel.streams.map(stream => {
+                    const obj = { url: stream.url, label: stream.label };
+                    if (stream.userAgent && String(stream.userAgent).trim()) obj.userAgent = stream.userAgent;
+                    if (stream.referer && String(stream.referer).trim()) obj.referer = stream.referer;
+                    if (stream.origin && String(stream.origin).trim()) obj.origin = stream.origin;
+                    if (stream.cookie && String(stream.cookie).trim()) obj.cookie = stream.cookie;
+                    return obj;
+                })
             }))
         }));
         
