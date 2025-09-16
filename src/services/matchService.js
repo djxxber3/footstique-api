@@ -4,29 +4,29 @@ import { NotFoundError } from '../middleware/errorHandler.js';
 
 class MatchService {
 
-    async getMatchesByDate(date, populateActiveOnly = true) {
-        const startOfDay = new Date(date);
-        startOfDay.setUTCHours(0, 0, 0, 0);
-        const endOfDay = new Date(date);
-        endOfDay.setUTCHours(23, 59, 59, 999);
+  async getMatchesByDate(date, populateActiveOnly = true) {
+    const startOfDay = new Date(date);
+    startOfDay.setUTCHours(0, 0, 0, 0);
+    const endOfDay = new Date(date);
+    endOfDay.setUTCHours(23, 59, 59, 999);
 
-        const channelPopulation = {
-            path: 'channels',
-        };
-
-        if (populateActiveOnly) {
-            channelPopulation.match = { is_active: true };
-            channelPopulation.populate = {
-                path: 'streams',
-                match: { is_active: true },
-                options: { sort: { sort_order: 1 } }
-            };
+    const channelPopulation = {
+        path: 'channels',
+        populate: { 
+            path: 'streams',
+            options: { sort: { sort_order: 1 }}
         }
+    };
 
-        return await Match.find({ fixture_date: { $gte: startOfDay, $lte: endOfDay } })
-            .populate(channelPopulation)
-            .sort({ league_id: 1, kickoff_time: 1 }); // Sort by league_id then kickoff_time
+    if (populateActiveOnly) {
+        channelPopulation.match = { is_active: true };
+        channelPopulation.populate.match = { is_active: true };
     }
+
+    return await Match.find({ fixture_date: { $gte: startOfDay, $lte: endOfDay } })
+        .populate(channelPopulation)
+        .sort({ league_id: 1, kickoff_time: 1 });
+}
 
     async getMatchesWithChannels(date) {
         const matches = await this.getMatchesByDate(date, true);
