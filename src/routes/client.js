@@ -16,63 +16,41 @@ router.get('/health', (req, res) => {
     });
 });
 
-// Get matches with channels for a specific date (client endpofint)
+
 router.get('/matches/:date',
     validate(schemas.dateParam, 'params'),
     async (req, res, next) => {
         try {
             const { date } = req.params;
             
-            // Get all matches for the given date, including those without channels
             const matches = await matchService.getAllMatches(date);
             
-            // Transform response for client consumption
             const clientMatches = matches.map(match => {
-                const channelsMap = new Map();
                 
-                if (match.channels) {
-                    match.channels.forEach(channel => {
-                        if (!channelsMap.has(channel.id)) {
-                            channelsMap.set(channel.id, {
-                                id: channel.id,
-                                name: channel.name,
-                                logo: channel.logo_url,
-                                streams: []
-                            });
-                        }
+                const streaming_channels = (match.channels || [])
+                    .map(channel => {
+                        const activeStreams = (channel.streams || []).filter(s => s.is_active);
                         
-                        if (channel.streams) {
-                            channel.streams.filter(s => s.is_active !== false).forEach(stream => {
-                                // keep original stream info; headers will be conditionally added later
-                                channelsMap.get(channel.id).streams.push({
-                                    url: stream.url,
-                                    label: stream.label,
-                                    userAgent: stream.userAgent,
-                                    referer: stream.referer,
-                                    origin: stream.origin,
-                                    cookie: stream.cookie
-                                });
-                            });
+                        if (activeStreams.length === 0) {
+                            return null;
                         }
-                    });
-                }
 
-                // Flatten streams to a simple list with channel-aware names
-                const streaming_channels = [];
-                Array.from(channelsMap.values()).forEach(ch => {
-                    ch.streams.forEach(s => {
-                        const item = {
-                            url: s.url,
-                            name: s.label ? `${ch.name} - ${s.label}` : ch.name,
-                            channel_id: ch.id
+                        return {
+                            id: channel.id,
+                            name: channel.name,
+                            logo_url: channel.logo_url,
+                            streams: activeStreams.map(s => ({
+                                id: s.id,
+                                url: s.url,
+                                label: s.label,
+                                userAgent: s.userAgent,
+                                referer: s.referer,
+                                origin: s.origin,
+                                cookie: s.cookie
+                            }))
                         };
-                        if (s.userAgent && String(s.userAgent).trim()) item.userAgent = s.userAgent;
-                        if (s.referer && String(s.referer).trim()) item.referer = s.referer;
-                        if (s.origin && String(s.origin).trim()) item.origin = s.origin;
-                        if (s.cookie && String(s.cookie).trim()) item.cookie = s.cookie;
-                        streaming_channels.push(item);
-                    });
-                });
+                    })
+                    .filter(Boolean);
 
                 return {
                     id: match.id,
@@ -92,7 +70,7 @@ router.get('/matches/:date',
                         goals: match.away_team_goals
                     },
                     competition: {
-                        id: match.league_id, // Add league_id to competition
+                        id: match.league_id,
                         name: match.competition_name,
                         logo: match.competition_logo,
                         country: match.competition_country
